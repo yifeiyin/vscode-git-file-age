@@ -1,7 +1,7 @@
 {
   "name": "gitviz",
   "displayName": "GitViz",
-  "description": "",
+  "description": "Highlights files in the explorer based on their git modification dates",
   "version": "0.0.1",
   "engines": {
     "vscode": "^1.100.0"
@@ -9,15 +9,12 @@
   "categories": [
     "Other"
   ],
-  "activationEvents": [],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
   "main": "./out/extension.js",
   "contributes": {
-    "commands": [
-      {
-        "command": "gitviz.helloWorld",
-        "title": "Hello World"
-      }
-    ]
+    "commands": []
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",
