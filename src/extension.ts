@@ -2,7 +2,6 @@
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
 import * as path from 'path';
-import * as fs from 'fs';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 
@@ -15,12 +14,18 @@ function formatDate(date: Date): string {
 class GitFileDecorationProvider implements vscode.FileDecorationProvider {
   private _onDidChangeFileDecorations = new vscode.EventEmitter<vscode.Uri | vscode.Uri[]>();
   readonly onDidChangeFileDecorations = this._onDidChangeFileDecorations.event;
+  private gitRoot: string | null = null;
 
   // Function to get git root directory for a file
   private async getGitRoot(filePath: string): Promise<string | null> {
+    if (this.gitRoot && path.dirname(filePath).startsWith(this.gitRoot)) {
+      return this.gitRoot;
+    }
+
     try {
       const { stdout } = await execAsync(`git rev-parse --show-toplevel`, { cwd: path.dirname(filePath) });
-      return stdout.trim();
+      this.gitRoot = stdout.trim();
+      return this.gitRoot;
     } catch (error) {
       console.error(`Error getting git root for ${filePath}:`, error);
       return null;
@@ -35,19 +40,13 @@ class GitFileDecorationProvider implements vscode.FileDecorationProvider {
         return null;
       }
 
-      // Get relative path from git root
-      const relativePath = path.relative(gitRoot, filePath);
+      const { stdout } = await execAsync(`git log -1 --format=%ct,%an -- "${filePath}"`, { cwd: gitRoot });
+      const [timestamp, author] = stdout.trim().split(',');
 
-      // Execute git log from the git root directory
-      const { stdout } = await execAsync(`git log -1 --format=%ct -- "${relativePath}"`, { cwd: gitRoot });
-      const { stdout: authorOut } = await execAsync(`git log -1 --format=%an -- "${relativePath}"`, { cwd: gitRoot });
-      const author = authorOut.trim();
-      const timestamp = parseInt(stdout.trim());
-
-      if (isNaN(timestamp)) {
+      if (isNaN(Number(timestamp))) {
         return null;
       }
-      return { date: new Date(timestamp * 1000), author: author };
+      return { date: new Date(Number(timestamp) * 1000), author: author };
     } catch (error) {
       console.error(`Error getting git date for ${filePath}:`, error);
       return null;
@@ -69,9 +68,8 @@ class GitFileDecorationProvider implements vscode.FileDecorationProvider {
 
     const now = new Date();
     const diffDays = (now.getTime() - info.date.getTime()) / (1000 * 60 * 60 * 24);
-    const tooltip = `Modified on ${formatDate(info.date)} by ${info.author}`;
+    const tooltip = `Last modified: ${formatDate(info.date)} by ${info.author}, ${Math.round(diffDays)} days ago`;
 
-    // 🟢 ⚪️🟡🟠🟣🟤⚫️
     if (diffDays >= 100) {
       const years = diffDays / 365;
       let badge: string;
@@ -107,35 +105,11 @@ class GitFileDecorationProvider implements vscode.FileDecorationProvider {
   }
 }
 
-// This method is called when your extension is activated
-// Your extension is activated the very first time the command is executed
 export function activate(context: vscode.ExtensionContext) {
-  console.log('GitViz extension is now active!');
-
   const decorationProvider = new GitFileDecorationProvider();
   context.subscriptions.push(
-    vscode.window.registerFileDecorationProvider(decorationProvider)
+    vscode.window.registerFileDecorationProvider(decorationProvider),
   );
-
-  // Watch for file system changes
-  const fileSystemWatcher = vscode.workspace.createFileSystemWatcher('**/*');
-
-  fileSystemWatcher.onDidChange(uri => {
-    decorationProvider.refresh(uri);
-  });
-
-  fileSystemWatcher.onDidCreate(uri => {
-    decorationProvider.refresh(uri);
-  });
-
-  // Update decorations when switching workspaces
-  vscode.workspace.onDidChangeWorkspaceFolders(() => {
-    decorationProvider.refresh();
-  });
-
-  // Initial decoration update
-  decorationProvider.refresh();
 }
 
-// This method is called when your extension is deactivated
 export function deactivate() { }
