@@ -8,83 +8,104 @@ import { promisify } from 'util';
 
 const execAsync = promisify(exec);
 
-// Define decoration types for different time ranges
-const recentDecoration = vscode.window.createTextEditorDecorationType({
-	backgroundColor: 'rgba(0, 255, 0, 0.1)',
-	border: '1px solid rgba(0, 255, 0, 0.3)'
-});
-
-const oldDecoration = vscode.window.createTextEditorDecorationType({
-	backgroundColor: 'rgba(255, 0, 0, 0.1)',
-	border: '1px solid rgba(255, 0, 0, 0.3)'
-});
-
-// Function to get git root directory for a file
-async function getGitRoot(filePath: string): Promise<string | null> {
-	try {
-		const { stdout } = await execAsync(`git rev-parse --show-toplevel`, { cwd: path.dirname(filePath) });
-		return stdout.trim();
-	} catch (error) {
-		console.error(`Error getting git root for ${filePath}:`, error);
-		return null;
-	}
+function formatDate(date: Date): string {
+	return `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}`;
 }
 
-// Function to get git modification date for a file
-async function getGitModificationDate(filePath: string): Promise<Date | null> {
-	try {
-		const gitRoot = await getGitRoot(filePath);
-		if (!gitRoot) {
+class GitFileDecorationProvider implements vscode.FileDecorationProvider {
+	private _onDidChangeFileDecorations = new vscode.EventEmitter<vscode.Uri | vscode.Uri[]>();
+	readonly onDidChangeFileDecorations = this._onDidChangeFileDecorations.event;
+
+	// Function to get git root directory for a file
+	private async getGitRoot(filePath: string): Promise<string | null> {
+		try {
+			const { stdout } = await execAsync(`git rev-parse --show-toplevel`, { cwd: path.dirname(filePath) });
+			return stdout.trim();
+		} catch (error) {
+			console.error(`Error getting git root for ${filePath}:`, error);
 			return null;
 		}
+	}
 
-		// Get relative path from git root
-		const relativePath = path.relative(gitRoot, filePath);
+	// Function to get git modification date for a file
+	private async getGitInfo(filePath: string): Promise<{ date: Date, author: string } | null> {
+		try {
+			const gitRoot = await this.getGitRoot(filePath);
+			if (!gitRoot) {
+				return null;
+			}
 
-		// Execute git log from the git root directory
-		const { stdout } = await execAsync(`git log -1 --format=%ct -- "${relativePath}"`, { cwd: gitRoot });
-		const timestamp = parseInt(stdout.trim());
+			// Get relative path from git root
+			const relativePath = path.relative(gitRoot, filePath);
 
-		if (isNaN(timestamp)) {
+			// Execute git log from the git root directory
+			const { stdout } = await execAsync(`git log -1 --format=%ct -- "${relativePath}"`, { cwd: gitRoot });
+			const { stdout: authorOut } = await execAsync(`git log -1 --format=%an -- "${relativePath}"`, { cwd: gitRoot });
+			const author = authorOut.trim();
+			const timestamp = parseInt(stdout.trim());
+
+			if (isNaN(timestamp)) {
+				return null;
+			}
+			return { date: new Date(timestamp * 1000), author: author };
+		} catch (error) {
+			console.error(`Error getting git date for ${filePath}:`, error);
 			return null;
 		}
-		return new Date(timestamp * 1000);
-	} catch (error) {
-		console.error(`Error getting git date for ${filePath}:`, error);
-		return null;
-	}
-}
-
-// Function to update decorations for a file
-async function updateFileDecoration(uri: vscode.Uri) {
-	const filePath = uri.fsPath;
-	if (filePath.includes('node_modules')) {
-		return;
-	}
-	if (filePath.includes('.git')) {
-		return;
-	}
-	console.log('Updating decoration for', filePath);
-	const modDate = await getGitModificationDate(filePath);
-
-	if (!modDate) {
-		return;
 	}
 
-	const now = new Date();
-	const diffDays = (now.getTime() - modDate.getTime()) / (1000 * 60 * 60 * 24);
+	async provideFileDecoration(uri: vscode.Uri): Promise<vscode.FileDecoration | undefined> {
+		const filePath = uri.fsPath;
 
-	const decoration = diffDays <= 7 ? recentDecoration : oldDecoration;
-
-	// Create decoration range for the entire file
-	const range = new vscode.Range(0, 0, 0, 0);
-
-	// Apply decoration to the file in the explorer
-	vscode.window.visibleTextEditors.forEach(editor => {
-		if (editor.document.uri.fsPath === filePath) {
-			editor.setDecorations(decoration, [range]);
+		// Skip node_modules and .git directories
+		if (filePath.includes('node_modules') || filePath.includes('.git')) {
+			return undefined;
 		}
-	});
+
+		const info = await this.getGitInfo(filePath);
+		if (!info) {
+			return undefined;
+		}
+
+		const now = new Date();
+		const diffDays = (now.getTime() - info.date.getTime()) / (1000 * 60 * 60 * 24);
+		const tooltip = `Modified on ${formatDate(info.date)} by ${info.author}`;
+
+		if (diffDays > 365) {
+			return {
+				badge: Math.min(9, Math.round(diffDays / 365)) + 'y',
+				color: new vscode.ThemeColor('gitDecoration.ignoredResourceForeground'),
+				tooltip,
+			};
+		}
+
+		if (diffDays < 2) {
+			return {
+				badge: Math.round(diffDays * 24).toString(),
+				tooltip,
+				color: new vscode.ThemeColor('gitDecoration.untrackedResourceForeground'),
+			};
+		}
+
+		if (diffDays < 100) {
+			return {
+				badge: Math.round(diffDays).toString(),
+				tooltip,
+				color: new vscode.ThemeColor('gitDecoration.modifiedResourceForeground'),
+			};
+		}
+
+		return {
+			badge: (Math.round(diffDays / 12).toString() + 'm').slice(0, 2),
+			// color: new vscode.ThemeColor('gitDecoration.untrackedResourceForeground'),
+			tooltip,
+		};
+	}
+
+	// Method to trigger decoration updates
+	refresh(uri?: vscode.Uri) {
+		this._onDidChangeFileDecorations.fire(uri || []);
+	}
 }
 
 // This method is called when your extension is activated
@@ -92,35 +113,30 @@ async function updateFileDecoration(uri: vscode.Uri) {
 export function activate(context: vscode.ExtensionContext) {
 	console.log('GitViz extension is now active!');
 
+	const decorationProvider = new GitFileDecorationProvider();
+	context.subscriptions.push(
+		vscode.window.registerFileDecorationProvider(decorationProvider)
+	);
+
 	// Watch for file system changes
 	const fileSystemWatcher = vscode.workspace.createFileSystemWatcher('**/*');
 
 	fileSystemWatcher.onDidChange(uri => {
-		updateFileDecoration(uri);
+		decorationProvider.refresh(uri);
 	});
 
 	fileSystemWatcher.onDidCreate(uri => {
-		updateFileDecoration(uri);
+		decorationProvider.refresh(uri);
 	});
 
-	// Update decorations for all visible editors
-	vscode.window.onDidChangeActiveTextEditor(editor => {
-		if (editor) {
-			updateFileDecoration(editor.document.uri);
-		}
+	// Update decorations when switching workspaces
+	vscode.workspace.onDidChangeWorkspaceFolders(() => {
+		decorationProvider.refresh();
 	});
 
 	// Initial decoration update
-	vscode.window.visibleTextEditors.forEach(editor => {
-		updateFileDecoration(editor.document.uri);
-	});
-
-	context.subscriptions.push(fileSystemWatcher);
+	decorationProvider.refresh();
 }
 
 // This method is called when your extension is deactivated
-export function deactivate() {
-	// Clean up decorations
-	recentDecoration.dispose();
-	oldDecoration.dispose();
-}
+export function deactivate() { }
