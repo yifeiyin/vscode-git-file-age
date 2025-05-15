@@ -17,7 +17,11 @@
     "commands": [
       {
         "command": "git-file-age.toggle",
-        "title": "Toggle Git File Age Decorations"
+        "title": "Git File Age: Toggle"
+      },
+      {
+        "command": "git-file-age.refresh",
+        "title": "Git File Age: Refresh"
       }
     ],
     "keybindings": [],
