@@ -3,6 +3,7 @@
   "displayName": "Git File Age",
   "description": "Add file age decorations in file explorer based on last git modification date",
   "version": "1.0.0",
+  "publisher": "yifeiyin",
   "repository": {
     "type": "git",
     "url": "https://github.com/yifeiyin/vscode-git-file-age"
@@ -68,7 +69,7 @@
     "test": "vscode-test"
   },
   "devDependencies": {
-    "@types/vscode": "^1.100.0",
+    "@types/vscode": "^1.80.0",
     "@types/mocha": "^10.0.10",
     "@types/node": "20.x",
     "@typescript-eslint/eslint-plugin": "^8.31.1",
