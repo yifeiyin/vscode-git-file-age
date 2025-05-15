@@ -14,8 +14,12 @@ Visualize file ages in VS Code's file explorer based on their last git modificat
 
 * `Git File Age: Toggle` - Enable/disable the decorations
 * `Git File Age: Refresh` - Refresh the decorations
-* `Git File Age: Update threshold for new files` - Set days threshold for recent files (0 to disable)
-* `Git File Age: Update threshold for old files` - Set days threshold for old files (999999 to disable)
+* `Git File Age: Update threshold for new files` - Set threshold for recent files (0 to disable)
+* `Git File Age: Update threshold for old files` - Set threshold for old files (999999 to disable)
+  * You can enter:
+  * A number of days (e.g., "7")
+  * A date in YYYY-MM-DD format (e.g., "2024-03-01")
+  * A commit hash (e.g., "a1b2c3d")
 
 ## Settings
 
