@@ -3,10 +3,10 @@ import { GitService } from '../utils/GitService';
 import { formatDate, getColorForDate, padRight } from '../utils/helpers';
 
 export class GitBlameProvider {
-  private isEnabled: boolean = false;
+  public isEnabled: boolean = false;
+
   private activeEditor: vscode.TextEditor | undefined;
   private decorationType: vscode.TextEditorDecorationType;
-  private loadingDecorationType: vscode.TextEditorDecorationType;
   private maxLength: number = 20;
   private gitService: GitService;
 
@@ -17,15 +17,6 @@ export class GitBlameProvider {
     this.decorationType = vscode.window.createTextEditorDecorationType({
       before: {
         margin: '0 0 0 0',
-        color: new vscode.ThemeColor('git.blame.editorDecorationForeground')
-      }
-    });
-
-    // Create decoration type for loading state
-    this.loadingDecorationType = vscode.window.createTextEditorDecorationType({
-      before: {
-        margin: '0 0 0 0',
-        contentText: padRight('⏳ Loading…', this.maxLength - 1),
         fontStyle: 'normal',
         color: new vscode.ThemeColor('git.blame.editorDecorationForeground')
       }
@@ -38,6 +29,17 @@ export class GitBlameProvider {
         this.updateDecorations();
       }
     });
+
+    // Listen for cursor changes
+    vscode.window.onDidChangeTextEditorSelection(event => {
+      if (this.isEnabled) {
+        this.updateDecorations();
+      }
+    });
+
+    if (this.isEnabled) {
+      this.updateDecorations();
+    }
   }
 
   private async updateDecorations() {
@@ -46,25 +48,28 @@ export class GitBlameProvider {
     }
 
     const filePath = this.activeEditor.document.uri.fsPath;
-    if (filePath.includes('node_modules') || filePath.includes('.git')) {
-      return;
-    }
 
-    const loadingDecorations: vscode.DecorationOptions[] = [];
     const document = this.activeEditor.document;
+    const loadingDecorations: vscode.DecorationOptions[] = [];
 
     for (let i = 0; i < document.lineCount; i++) {
       loadingDecorations.push({
-        range: new vscode.Range(i, 0, i, 0)
+        range: new vscode.Range(i, 0, i, 0),
+        renderOptions: {
+          before: {
+            contentText: padRight('Loading…', this.maxLength),
+            color: new vscode.ThemeColor('git.blame.editorDecorationForeground')
+          }
+        }
       });
     }
 
-    this.activeEditor.setDecorations(this.loadingDecorationType, loadingDecorations);
-    this.activeEditor.setDecorations(this.decorationType, []);
+    this.activeEditor.setDecorations(this.decorationType, loadingDecorations);
 
     try {
       const blameMap = await this.gitService.getGitBlame(filePath);
       if (blameMap.size === 0) {
+        // TODO: Show a message to the user that no blame information was found
         console.log('No blame information found');
         return;
       }
@@ -99,13 +104,10 @@ export class GitBlameProvider {
       }
 
       console.log(`Setting ${decorations.length} decorations`);
-      this.activeEditor.setDecorations(this.loadingDecorationType, []);
       this.activeEditor.setDecorations(this.decorationType, decorations);
     } catch (error) {
       console.error('Error updating decorations:', error);
-      // Clear loading state on error
-      this.activeEditor.setDecorations(this.loadingDecorationType, []);
-    } finally {
+      this.activeEditor.setDecorations(this.decorationType, []);
     }
   }
 
@@ -119,7 +121,6 @@ export class GitBlameProvider {
         this.updateDecorations();
       } else {
         this.activeEditor.setDecorations(this.decorationType, []);
-        this.activeEditor.setDecorations(this.loadingDecorationType, []);
       }
     }
   }
