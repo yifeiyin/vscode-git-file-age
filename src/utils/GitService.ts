@@ -50,39 +50,4 @@ export class GitService {
       return null;
     }
   }
-
-  async getGitBlame(filePath: string): Promise<Map<number, GitInfo>> {
-    try {
-      const gitRoot = await this.getGitRoot(filePath);
-      if (!gitRoot) {
-        console.log('No git root found for:', filePath);
-        return new Map();
-      }
-
-      console.log('Getting git blame for:', filePath);
-      const { stdout } = await execAsync(`git blame --line-porcelain -- "${filePath}"`, { cwd: gitRoot });
-      const lines = stdout.split('\n');
-      const blameMap = new Map<number, GitInfo>();
-      let currentLine = 0;
-      let currentAuthor = '';
-      let currentDate = new Date();
-
-      for (const line of lines) {
-        if (line.startsWith('author ')) {
-          currentAuthor = line.substring(7);
-        } else if (line.startsWith('author-time ')) {
-          currentDate = new Date(Number(line.substring(12)) * 1000);
-        } else if (line.startsWith('\t')) {
-          currentLine++;
-          blameMap.set(currentLine, { author: currentAuthor, date: currentDate });
-        }
-      }
-
-      console.log(`Found ${blameMap.size} blame entries for ${filePath}`);
-      return blameMap;
-    } catch (error) {
-      console.error(`Error getting git blame for ${filePath}:`, error);
-      return new Map();
-    }
-  }
 }

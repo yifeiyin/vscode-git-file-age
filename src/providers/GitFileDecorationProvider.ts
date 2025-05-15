@@ -30,7 +30,6 @@ export class GitFileDecorationProvider implements vscode.FileDecorationProvider 
     };
   }
 
-  // Method to trigger decoration updates
   refresh(uri?: vscode.Uri) {
     this._onDidChangeFileDecorations.fire(uri || []);
   }

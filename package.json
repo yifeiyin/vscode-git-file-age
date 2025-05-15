@@ -1,10 +1,10 @@
 {
-  "name": "gitviz",
-  "displayName": "GitViz",
-  "description": "Highlights files in the explorer based on their git modification dates",
+  "name": "git-file-age",
+  "displayName": "Git File Age",
+  "description": "Add file age in file explorer based on their last git modification dates",
   "version": "0.0.1",
   "engines": {
-    "vscode": "^1.100.0"
+    "vscode": "^1.80.0"
   },
   "categories": [
     "Other"
@@ -16,27 +16,21 @@
   "contributes": {
     "commands": [
       {
-        "command": "gitviz.toggleBlame",
-        "title": "GitViz: Toggle Inline Git Blame",
-        "icon": "$(git-commit)"
+        "command": "git-file-age.toggle",
+        "title": "Toggle Git File Age Decorations"
       }
     ],
-    "keybindings": [
-      {
-        "command": "gitviz.toggleBlame",
-        "key": "ctrl+shift+b",
-        "mac": "cmd+shift+b",
-        "when": "editorTextFocus"
-      }
-    ],
-    "menus": {
-      "editor/title": [
-        {
-          "command": "gitviz.toggleBlame",
-          "group": "navigation",
-          "when": "editorTextFocus"
+    "keybindings": [],
+    "menus": {},
+    "configuration": {
+      "title": "Git File Age",
+      "properties": {
+        "git-file-age.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable/disable Git File Age decorations"
         }
-      ]
+      }
     }
   },
   "scripts": {

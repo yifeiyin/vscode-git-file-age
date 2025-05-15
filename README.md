@@ -1,31 +1,28 @@
-# gitviz README
+# Git File Age
 
-This is the README for your extension "gitviz". After writing up a brief description, we recommend including the following sections.
+A VS Code extension that visualizes file ages in the explorer based on their last git modification dates. Quickly identify old and recently modified files with color-coded age indicators.
 
 ## Features
 
-Describe specific features of your extension including screenshots of your extension in action. Image paths are relative to this README file.
-
-For example if there is an image subfolder under your extension project workspace:
-
-\!\[feature X\]\(images/feature-x.png\)
-
-> Tip: Many popular extensions utilize animations. This is an excellent way to show off your extension! We recommend short, focused animations that are easy to follow.
-
-## Requirements
-
-If you have any requirements or dependencies, add a section describing those and how to install and configure them.
+- Shows file modification dates from git history in the file explorer
+- Color-codes files based on their age
+- Toggle file decorations on/off with a command
+- Persistent setting to enable/disable the feature
 
 ## Extension Settings
 
-Include if your extension adds any VS Code settings through the `contributes.configuration` extension point.
-
-For example:
-
 This extension contributes the following settings:
 
-* `myExtension.enable`: Enable/disable this extension.
-* `myExtension.thing`: Set to `blah` to do something.
+* `git-file-age.enabled`: Enable/disable Git File Age decorations (default: true)
+
+## Commands
+
+* `Git File Age: Toggle File Decorations`: Toggle the visibility of git-based file decorations
+
+## Requirements
+
+- Git repository
+- VS Code 1.100.0 or higher
 
 ## Known Issues
 
