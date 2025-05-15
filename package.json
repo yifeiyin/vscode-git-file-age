@@ -22,6 +22,14 @@
       {
         "command": "git-file-age.refresh",
         "title": "Git File Age: Refresh"
+      },
+      {
+        "command": "git-file-age.updateRecentThreshold",
+        "title": "Git File Age: Update threshold for new files"
+      },
+      {
+        "command": "git-file-age.updateOldThreshold",
+        "title": "Git File Age: Update threshold for old files"
       }
     ],
     "keybindings": [],

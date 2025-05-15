@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { GitFileDecorationProvider } from './providers/GitFileDecorationProvider';
+import { registerThresholdCommands } from './commands/thresholdCommands';
 
 
 export function activate(context: vscode.ExtensionContext) {
@@ -22,6 +23,9 @@ export function activate(context: vscode.ExtensionContext) {
 
   context.subscriptions.push(toggleCommand);
   context.subscriptions.push(refreshCommand);
+
+  // Register threshold commands
+  registerThresholdCommands(context);
 
   // Listen for configuration changes
   context.subscriptions.push(
