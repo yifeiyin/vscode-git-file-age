@@ -14,7 +14,20 @@
   ],
   "main": "./out/extension.js",
   "contributes": {
-    "commands": []
+    "commands": [
+      {
+        "command": "gitviz.toggleBlame",
+        "title": "GitViz: Toggle Inline Git Blame"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "gitviz.toggleBlame",
+        "key": "ctrl+shift+b",
+        "mac": "cmd+shift+b",
+        "when": "editorTextFocus"
+      }
+    ]
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",
