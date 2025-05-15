@@ -14,6 +14,21 @@ A VS Code extension that visualizes file ages in the explorer based on their las
 This extension contributes the following settings:
 
 * `git-file-age.enabled`: Enable/disable Git File Age decorations (default: true)
+* `git-file-age.recentThresholdDays`: Number of days within which files will be highlighted in green (recent changes). Set to 0 to disable recent file highlighting. (default: 7)
+* `git-file-age.oldThresholdDays`: Number of days after which files will be grayed out (old changes). Set to a very large number (e.g. 999999) to disable old file highlighting. (default: 100)
+
+### How to Disable Highlighting
+
+You can disable either the recent or old file highlighting by adjusting the threshold settings:
+
+1. To disable recent file highlighting (green):
+   - Set `git-file-age.recentThresholdDays` to 0
+
+2. To disable old file highlighting (gray):
+   - Set `git-file-age.oldThresholdDays` to 999999
+
+3. To disable all highlighting but keep the age badges:
+   - Set both thresholds as described above
 
 ## Commands
 

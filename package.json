@@ -33,6 +33,16 @@
           "type": "boolean",
           "default": true,
           "description": "Enable/disable Git File Age decorations"
+        },
+        "git-file-age.recentThresholdDays": {
+          "type": "number",
+          "default": 7,
+          "description": "Number of days within which files will be highlighted in green. Set to 0 to disable"
+        },
+        "git-file-age.oldThresholdDays": {
+          "type": "number",
+          "default": 100,
+          "description": "Number of days after which files will be grayed out. Set to 999999 to disable"
         }
       }
     }
