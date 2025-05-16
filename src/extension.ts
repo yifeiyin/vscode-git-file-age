@@ -3,6 +3,7 @@ import { GitFileDecorationProvider } from './providers/GitFileDecorationProvider
 import { registerThresholdCommands } from './commands/thresholdCommands';
 import { Debounced } from './utils/Debounced';
 import * as fs from 'fs';
+import path from 'path';
 
 export function activate(context: vscode.ExtensionContext) {
   console.log('Git File Age extension is activated');
@@ -30,11 +31,14 @@ export function activate(context: vscode.ExtensionContext) {
   registerThresholdCommands(context);
 
   //////////// Refresh on file change ////////////
-  const debouncedRefresh = new Debounced(() => decorationProvider.refresh());
+  const debouncedRefresh = new Debounced((uri?: vscode.Uri) => { decorationProvider.refresh(uri); });
   const workspaceFolders = vscode.workspace.workspaceFolders ?? [];
   workspaceFolders.forEach(folder => {
-    const watcher = fs.watch(folder.uri.fsPath, { recursive: true }, () => {
-      debouncedRefresh.refresh();
+    const watcher = fs.watch(folder.uri.fsPath, { recursive: true }, (_, filename) => {
+      if (filename) {
+        const fullPath = path.join(folder.uri.fsPath, filename);
+        debouncedRefresh.refresh(vscode.Uri.file(fullPath));
+      }
     });
 
     context.subscriptions.push({
