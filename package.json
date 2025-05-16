@@ -2,8 +2,9 @@
   "name": "git-file-age",
   "displayName": "Git File Age",
   "description": "Add file age decorations in file explorer based on last git modification date",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "publisher": "yifeiyin",
+  "icon": "docs/icon.png",
   "repository": {
     "type": "git",
     "url": "https://github.com/yifeiyin/vscode-git-file-age"

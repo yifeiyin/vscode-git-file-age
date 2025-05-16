@@ -37,6 +37,7 @@ export class GitService {
         return null;
       }
 
+      console.debug('Fetching git info for', filePath);
       const { stdout } = await execAsync(`git log -1 --format=%ct,%an -- "${filePath}"`, { cwd: gitRoot });
       if (stdout.trim() === '') { return null; }
       const [timestamp, author] = stdout.trim().split(',');

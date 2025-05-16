@@ -74,7 +74,7 @@ export function registerThresholdCommands(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand('git-file-age.updateRecentThreshold', () => {
       updateThreshold(
         'recentThresholdDays',
-        'Set as the threshold for new files, 0 to disable'
+        'Newer files will be highlighted in green. Set to -1 to disable.'
       );
     })
   );
@@ -83,7 +83,7 @@ export function registerThresholdCommands(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand('git-file-age.updateOldThreshold', () => {
       updateThreshold(
         'oldThresholdDays',
-        'Set as the threshold for old files, 999999 to disable'
+        'Older files will be grayed out. Set to -1 to disable.'
       );
     })
   );

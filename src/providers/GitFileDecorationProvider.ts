@@ -22,11 +22,11 @@ export class GitFileDecorationProvider implements vscode.FileDecorationProvider 
     }
     const filePath = uri.fsPath;
 
+    this.loadGitInfo(uri, filePath);
+
     if (this.cache.has(filePath)) {
       return this.cache.get(filePath) || undefined;
     }
-
-    this.loadGitInfo(uri, filePath);
 
     return {
       badge: '•',
@@ -36,37 +36,37 @@ export class GitFileDecorationProvider implements vscode.FileDecorationProvider 
 
   private async loadGitInfo(uri: vscode.Uri, filePath: string) {
     const info = await this.gitService.getGitInfo(filePath);
-    if (!info) {
-      this.cache.set(filePath, null);
+    let decoration: vscode.FileDecoration | null = null;
+
+    if (info) {
+      const now = new Date();
+      const diffDays = (now.getTime() - info.date.getTime()) / (1000 * 60 * 60 * 24);
+      const tooltip = `Last modified: ${formatDate(info.date)} by ${info.author}, ${Math.round(diffDays)} days ago`;
+
+      const config = vscode.workspace.getConfiguration('git-file-age');
+      const recentThreshold = config.get('recentThresholdDays', 7);
+      const oldThreshold = config.get('oldThresholdDays', 365);
+
+      let color: vscode.ThemeColor | undefined;
+      if (recentThreshold > 0 && diffDays <= recentThreshold) {
+        color = new vscode.ThemeColor('gitDecoration.untrackedResourceForeground');
+      } else if (oldThreshold > 0 && diffDays >= oldThreshold) {
+        color = new vscode.ThemeColor('gitDecoration.ignoredResourceForeground');
+      } else {
+        color = undefined;
+      }
+
+      decoration = {
+        badge: formatDiffDays(diffDays),
+        tooltip,
+        color,
+      };
+    }
+
+    if (JSON.stringify(this.cache.get(filePath)) !== JSON.stringify(decoration)) {
+      this.cache.set(filePath, decoration);
       this.refresh(uri);
-      return;
     }
-
-    const now = new Date();
-    const diffDays = (now.getTime() - info.date.getTime()) / (1000 * 60 * 60 * 24);
-    const tooltip = `Last modified: ${formatDate(info.date)} by ${info.author}, ${Math.round(diffDays)} days ago`;
-
-    const config = vscode.workspace.getConfiguration('git-file-age');
-    const recentThreshold = config.get('recentThresholdDays', 7);
-    const oldThreshold = config.get('oldThresholdDays', 100);
-
-    let color: vscode.ThemeColor | undefined;
-    if (diffDays <= recentThreshold) {
-      color = new vscode.ThemeColor('gitDecoration.untrackedResourceForeground');
-    } else if (diffDays >= oldThreshold) {
-      color = new vscode.ThemeColor('gitDecoration.ignoredResourceForeground');
-    } else {
-      color = undefined;
-    }
-
-    const decoration = {
-      badge: formatDiffDays(diffDays),
-      tooltip,
-      color,
-    };
-
-    this.cache.set(filePath, decoration);
-    this.refresh(uri);
   }
 
   refresh(uri?: vscode.Uri) {
