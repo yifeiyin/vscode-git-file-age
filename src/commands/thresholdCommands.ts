@@ -37,7 +37,7 @@ async function updateThreshold(settingKey: string, promptMessage: string) {
 
   // First check if it's a number
   const numberInput = Number(input);
-  if (!isNaN(numberInput) && numberInput >= 0) {
+  if (!isNaN(numberInput) && numberInput >= -1) {
     daysDiff = Math.floor(numberInput);
   }
   // Then check if it's a commit hash (simple heuristic: 7-40 characters of hex)
